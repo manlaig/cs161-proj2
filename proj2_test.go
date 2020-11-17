@@ -4,17 +4,15 @@ package proj2
 // imports it will break the autograder, and we will be Very Upset.
 
 import (
-	_ "encoding/hex"
-	"encoding/json"
-	_ "encoding/json"
-	_ "errors"
-	"reflect"
-	_ "strconv"
-	_ "strings"
 	"testing"
-
+	"reflect"
 	"github.com/cs161-staff/userlib"
+	_ "encoding/json"
+	_ "encoding/hex"
 	_ "github.com/google/uuid"
+	_ "strings"
+	_ "errors"
+	_ "strconv"
 )
 
 func clear() {
