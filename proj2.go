@@ -149,7 +149,7 @@ func (userdata *User) getFileMetadata(filename string) (meta FileMetaData, err e
 
 	var metadata FileMetaData
 
-	// the key in the datastore containing the key of the map
+	// the key in the datastore containing the key of the metadata
 	// we'll use that key of the map to get an encrypted MapEntry that we'll decrypt
 	var hashOfPtr = userlib.Hash([]byte("ptr/" + userdata.Username + "/" + filename))
 	var pointerKey = bytesToUUID(hashOfPtr[:])
@@ -704,6 +704,16 @@ func (userdata *User) ShareFile(filename string, recipient string) (
 func (userdata *User) ReceiveFile(filename string, sender string,
 	magic_string string) error {
 
+	// the key in the datastore for storing the file
+	var hashOfPtr = userlib.Hash([]byte("ptr/" + userdata.Username + "/" + filename))
+	var pointerKey = bytesToUUID(hashOfPtr[:])
+
+	// check if a file with filename already exists
+	_, ok := userlib.DatastoreGet(pointerKey)
+	if ok == true {
+		return errors.New(strings.ToTitle("File already exists"))
+	}
+
 	tokenJSONuuid, err := uuid.FromBytes([]byte(magic_string))
 	if err != nil {
 		return err
@@ -713,9 +723,6 @@ func (userdata *User) ReceiveFile(filename string, sender string,
 	if ok == false {
 		return errors.New(strings.ToTitle("Access token not valid"))
 	}
-
-	// deleting the access token
-	userlib.DatastoreDelete(tokenJSONuuid)
 
 	var token Token
 
@@ -746,9 +753,8 @@ func (userdata *User) ReceiveFile(filename string, sender string,
 		return err
 	}
 
-	// the key in the datastore for storing the file
-	var hashOfPtr = userlib.Hash([]byte("ptr/" + userdata.Username + "/" + filename))
-	var pointerKey = bytesToUUID(hashOfPtr[:])
+	// deleting the access token
+	userlib.DatastoreDelete(tokenJSONuuid)
 
 	// key = UUID("ptr/" + username + "/" + filename)
 	// value = HMAC + SymEnc(UUID("meta/" + userdata.Username + "/" + filename))
@@ -787,9 +793,12 @@ func (meta *FileMetaData) removeRecursively(key string) error {
 func (userdata *User) RevokeFile(filename string, target_username string) (err error) {
 
 	meta, err := userdata.getFileMetadata(filename)
+	if err != nil {
+		return err
+	}
 
 	// check for integrity of the owner whenever ShareFile is called
-	hmac, err := userlib.HMACEval(userdata.signKey, []byte(meta.Owner))
+	hmac, err := userlib.HMACEval(userdata.signKey, []byte(userdata.Username))
 	if err != nil {
 		return err
 	}
