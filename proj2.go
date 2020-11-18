@@ -183,6 +183,13 @@ func (userdata *User) getFileMetadata(filename string) (meta FileMetaData, err e
 	return metadata, nil
 }
 
+func makeBaseKey(password []byte) ([]byte) {
+	for i := 0; i < 25; i++ {
+		password = userlib.Argon2Key(password, password, BASE_KEYLEN)
+	}
+	return password
+}
+
 // The structure definition for a user record
 type User struct {
 	// public
@@ -270,10 +277,8 @@ func InitUser(username string, password string) (userdataptr *User, err error) {
 		return nil, err
 	}
 
-	// TODO: play with the keyLen
-	userdata.baseKey = userlib.Argon2Key([]byte(password), []byte(password), BASE_KEYLEN)
+	userdata.baseKey = makeBaseKey([]byte(password))
 
-	// TODO: check for error?
 	// the symmetric encryption key, need to be 16 bytes for HKDF
 	userdata.encryptKey, err = userlib.HashKDF(userdata.baseKey, []byte("encrypt"))
 	if err != nil {
@@ -314,7 +319,7 @@ func GetUser(username string, password string) (userdataptr *User, err error) {
 	var userdata User
 	userdataptr = &userdata
 
-	var baseKey = userlib.Argon2Key([]byte(password), []byte(password), BASE_KEYLEN)
+	var baseKey = makeBaseKey([]byte(password))
 
 	// the symmetric encryption key, need to be 16 bytes for HKDF
 	encryptKey, err := userlib.HashKDF(baseKey, []byte("encrypt"))
