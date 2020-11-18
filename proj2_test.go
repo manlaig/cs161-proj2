@@ -187,7 +187,7 @@ func TestAppend(t *testing.T) {
 
 	err = u.AppendFile("file1", []byte(" world"))
 	if err != nil {
-		t.Error("Appended to nonexisting file", err)
+		t.Error("Append failed:", err)
 		return
 	}
 
@@ -199,6 +199,37 @@ func TestAppend(t *testing.T) {
 
 	if !reflect.DeepEqual([]byte("hello world"), v) {
 		t.Error("Append failed:", v)
+		return
+	}
+}
+
+func TestManyAppends(t *testing.T) {
+	clear()
+	u, err := InitUser("alice", "fubar")
+	if err != nil {
+		t.Error("Failed to initialize user", err)
+		return
+	}
+
+	v := []byte("hello")
+	u.StoreFile("file1", v)
+
+	for i := 0; i < 100; i++ {
+		err = u.AppendFile("file1", []byte(" world"))
+		if err != nil {
+			t.Error("Append failed:", err)
+			return
+		}
+	}
+
+	v, err = u.LoadFile("file1")
+	if err != nil {
+		t.Error("Failed to download the file from alice", err)
+		return
+	}
+
+	if reflect.DeepEqual([]byte("hello"), v) {
+		t.Error("Append failed")
 		return
 	}
 }
